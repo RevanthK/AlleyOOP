@@ -1,20 +1,17 @@
 package com.chives.serve.backend.processor;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.bson.Document;
 import org.json.JSONObject;
@@ -22,7 +19,7 @@ import org.json.JSONObject;
 import com.chives.serve.backend.models.Order;
 import com.chives.serve.backend.models.Restaurant;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DBCursor;
+import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
@@ -45,12 +42,11 @@ public class RestaurantClient {
 												// custId);
 		if (isFinished == 1 || isFinished == 2) {
 			order = finishOrder(r, order);
-			BasicDBObject query = new BasicDBObject();
-			query.put("id", id);
-			FindIterable<Document> cursor = mc.getDatabase("serve").getCollection("restaurants").find(query);
+			System.out.println(id);
+			FindIterable<Document> cursor = mc.getDatabase("serve").getCollection("restaurants").find(new BasicDBObject("restaurant.id", id+""));
 			String accountId = "";
-			if (cursor != null){
-				accountId = cursor.first().get("accountId").toString();
+			if (cursor != null) {
+				accountId = cursor.first().getString("accountId");
 			}
 			try {
 				deposit(accountId, order.subtotal);
@@ -61,7 +57,7 @@ public class RestaurantClient {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			//deposit(accountId, order.subtotal);
+			// deposit(accountId, order.subtotal);
 			// webCall("")
 		} else {
 
@@ -76,13 +72,11 @@ public class RestaurantClient {
 	}
 
 	public void deposit(String accountId, double subtotal) throws ClientProtocolException, IOException {
-		String body = "{\r\n" + 
-				"				  \"medium\": \"balance\",\r\n" + 
-				"				  \"transaction_date\": \"2017-04-02\",\r\n" + 
-				"				  \"amount\":" + subtotal+ ",\r\n" + 
-				"				  \"description\": \"order\"\r\n" + 
-				"				}";
-		this.webCallPost("accounts/" + accountId + "/deposit", body);
+		String body = "{\r\n" + "				  \"medium\": \"balance\",\r\n"
+				+ "				  \"transaction_date\": \"2017-04-02\",\r\n" + "				  \"amount\":"
+				+ (subtotal*1.07) + ",\r\n" + "				  \"description\": \"order\"\r\n" + "				}";
+		System.out.println(body);
+		this.webCallPost("/accounts/" + accountId + "/deposits", body);
 	}
 
 	// itemname,restid,echoid,isfinished
@@ -121,7 +115,7 @@ public class RestaurantClient {
 		resCollection.find().forEach((Document e) -> resJson.add(new JSONObject(e.toJson())));
 		resJson.forEach(e -> {
 			e = e.getJSONObject("restaurant");
-			Restaurant temp = new Restaurant(e.getString("name"), e.getInt("id"));
+			Restaurant temp = new Restaurant(e.getString("name"), Integer.parseInt(e.getString("id")));
 			e.getJSONArray("items").forEach((Object x) -> temp.menu.addItem((((JSONObject) x).getString("name")),
 					(((JSONObject) x).getDouble("cost"))));
 			if (!restaurants.contains(temp))
@@ -131,34 +125,30 @@ public class RestaurantClient {
 
 	public JSONObject webCallPost(String endpoint, String body) throws ClientProtocolException, IOException {
 		HttpClient httpclient = HttpClients.createDefault();
+		System.out.println(endpoint);
 		HttpPost httppost = new HttpPost("http://api.reimaginebanking.com" + endpoint + "?key=" + API_KEY);
 		// Request parameters and other properties.
-		httppost.addHeader("Content-Type","application/json");
-		httppost.addHeader("Accept","application/json");
+		httppost.addHeader("Content-Type", "application/json");
+		httppost.addHeader("Accept", "application/json");
 		httppost.setEntity(new StringEntity(body));
 		// Execute and get the response.
 		HttpResponse response = httpclient.execute(httppost);
 		String r = EntityUtils.toString(response.getEntity());
 		return new JSONObject(r);
 	}
-	
+
 	public JSONObject webCallGet(String endpoint) throws Throwable {
 		HttpClient httpclient = HttpClients.createDefault();
 		HttpGet httpget = new HttpGet("http://api.reimaginebanking.com" + endpoint + "?key=" + API_KEY);
 		// Request parameters and other properties.
-		httpget.addHeader("Content-Type","application/json");
-		httpget.addHeader("Accept","application/json");
+		httpget.addHeader("Content-Type", "application/json");
+		httpget.addHeader("Accept", "application/json");
 		// Execute and get the response.
 		HttpResponse response = httpclient.execute(httpget);
 		String r = EntityUtils.toString(response.getEntity());
 		return new JSONObject(r);
 	}
-	
-	public static void main(String[] args) throws ClientProtocolException, IOException{
-		RestaurantClient a = new RestaurantClient(new MongoClient(
-				new MongoClientURI("mongodb://admin:adminofthedatabase@ds149040.mlab.com:49040/serve")));
-		System.out.println(a.getAccountId(a.getCustomerId()));
-	}
+
 	@Override
 	public String toString() {
 		return "RestaurantClient [restaurants=" + restaurants + "]";
@@ -174,24 +164,24 @@ public class RestaurantClient {
 	}
 
 	public Object getAccountId(String id) throws ClientProtocolException, IOException {
-		JSONObject _json = this.webCallPost("/customers/" + id + "/accounts", "{\r\n" + "  \"type\": \"Credit Card\",\r\n"
-				+ "  \"nickname\": \"string\",\r\n" + "  \"rewards\": 0,\r\n" + "  \"balance\": 0,\r\n"
-				+ "  \"account_number\": \"" + Integer.toString((int) (Math.random() * 10000))
+		JSONObject _json = this.webCallPost("/customers/" + id + "/accounts", "{\r\n"
+				+ "  \"type\": \"Savings\",\r\n" + "  \"nickname\": \"string\",\r\n" + "  \"rewards\": 0,\r\n"
+				+ "  \"balance\": 0,\r\n" + "  \"account_number\": \"" + Integer.toString((int) (Math.random() * 10000))
 				+ Integer.toString((int) (Math.random() * 10000)) + Integer.toString((int) (Math.random() * 10000))
 				+ Integer.toString((int) (Math.random() * 10000)) + "\"\r\n" + "}");
+		System.out.println(_json.toString());
 		return _json.getJSONObject("objectCreated").getString("_id");
 	}
-	
-	public String getTotalRevenue(String accountId) throws Throwable{
+
+	public String getTotalRevenue(String accountId) throws Throwable {
 		JSONObject _json = this.webCallGet("/accounts/" + accountId);
-		return _json.getString("balance");
+		return _json.get("balance").toString();
 	}
 
 	public String getRestaurantData(String name) throws Throwable {
-		BasicDBObject query = new BasicDBObject();
-		query.put("name", name);
-		FindIterable<Document> cursor = mc.getDatabase("serve").getCollection("restaurants").find(query);
-		String accountId = cursor.first().get("accountId").toString();
+		FindIterable<Document> cursor = mc.getDatabase("serve").getCollection("restaurants")
+				.find(new BasicDBObject("restaurant.name", name));
+		String accountId = cursor.first().getString("accountId");
 		return getTotalRevenue(accountId);
 	}
 }

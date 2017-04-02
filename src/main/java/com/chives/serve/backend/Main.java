@@ -76,7 +76,7 @@ public class Main {
 				return obj.toString();
 			} catch (Throwable t) {
 				JSONObject errorObj = new JSONObject();
-				errorObj.put("status", "invalid order id");
+				errorObj.put("status", "table not seated");
 				System.err.println("Screen Update: " + errorObj);
 				return errorObj;
 			}
@@ -92,7 +92,7 @@ public class Main {
 			String name = req.params("name");
 			try {
 				return client.getRestaurantData(name);
-			} catch (Throwable e) { 
+			} catch (Throwable e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -118,16 +118,15 @@ public class Main {
 		});
 
 		post("/restaurant", (req, res) -> {
-    String customerId = client.getCustomerId();
-    Document d = new Document("restaurant", BasicDBObject.parse(req.body()));
-    d.append("customerId", customerId);
-    d.append("accountId", client.getAccountId(customerId));
-			mongoClient.getDatabase("serve").getCollection("restaurants")
-					.insertOne(d);
+			System.out.println("called");
+			String customerId = client.getCustomerId();
+			Document d = new Document("restaurant", BasicDBObject.parse(req.body()));
+			d.append("customerId", customerId);
+			d.append("accountId", client.getAccountId(customerId));
+			mongoClient.getDatabase("serve").getCollection("restaurants").insertOne(d);
 			client.populate();
 			return mongoClient.getDatabase("serve").getCollection("restaurants").count();
 		});
 	}
 
-	
 }

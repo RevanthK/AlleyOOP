@@ -1,9 +1,6 @@
 package com.chives.serve.backend;
 
-import static spark.Spark.before;
-import static spark.Spark.get;
-import static spark.Spark.options;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 import java.text.DecimalFormat;
 import java.util.List;
@@ -23,10 +20,20 @@ import com.mongodb.MongoClientURI;
 
 public class Main {
 
+	static int getHerokuAssignedPort() {
+		ProcessBuilder processBuilder = new ProcessBuilder();
+		if (processBuilder.environment().get("PORT") != null) {
+			return Integer.parseInt(processBuilder.environment().get("PORT"));
+		}
+		return 4567; //return default port if heroku-port isn't set (i.e. on localhost)
+	}
+
 	public static void main(String[] args) throws Throwable {
 		final MongoClient mongoClient = new MongoClient(
 				new MongoClientURI("mongodb://admin:adminofthedatabase@ds149040.mlab.com:49040/serve"));
 		final RestaurantClient client = new RestaurantClient(mongoClient);
+
+		port(getHerokuAssignedPort());
 
 		options("/*", (request, response) -> {
 

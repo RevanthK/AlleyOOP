@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import com.mongodb.*;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -18,10 +19,6 @@ import org.json.JSONObject;
 
 import com.chives.serve.backend.models.Order;
 import com.chives.serve.backend.models.Restaurant;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 
@@ -112,7 +109,7 @@ public class RestaurantClient {
 		restaurants = new ArrayList<Restaurant>();
 		MongoCollection<Document> resCollection = mc.getDatabase("serve").getCollection("restaurants");
 		ArrayList<JSONObject> resJson = new ArrayList<JSONObject>();
-		resCollection.find().forEach((Document e) -> resJson.add(new JSONObject(e.toJson())));
+		resCollection.find().forEach((Block<? super Document>) (Document e) -> resJson.add(new JSONObject(e.toJson())));
 		resJson.forEach(e -> {
 			e = e.getJSONObject("restaurant");
 			Restaurant temp = new Restaurant(e.getString("name"), Integer.parseInt(e.getString("id")));

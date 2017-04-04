@@ -19,7 +19,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="library" name="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER" level="application" />
     <orderEntry type="library" name="Maven: org.mongodb:bson:3.4.2" level="project" />
-    <orderEntry type="library" name="Maven: org.mongodb:mongo-java-driver:3.4.2" level="project" />
+    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver:3.4.2" level="project" />
+    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-core:3.4.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.1" level="project" />
     <orderEntry type="library" name="Maven: com.sparkjava:spark-core:2.3" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.12" level="project" />
